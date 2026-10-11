@@ -1,0 +1,1370 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#9a2130">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="description" content="同学合成小游戏 · 合成杨璐恺">
+<title>合成杨璐恺</title>
+<style>
+  :root {
+    color-scheme: light;
+    font-family: system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+    color: #3a2123;
+    background: #f7f1ef;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; min-height: 100%; }
+  html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+  body { overscroll-behavior: none; background-image: linear-gradient(to bottom, #fcf6f4 0%, #f3e7e4 100%); }
+  button, canvas { -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; }
+  button { font: inherit; line-height: 1; color: inherit; margin: 0; padding: 0; border: 0; background: none; appearance: none; -webkit-appearance: none; }
+  button:focus, canvas:focus { outline: none; }
+
+  .app { margin: 0 auto; padding: env(safe-area-inset-top) 0 0; max-width: 440px; }
+
+  .topbar {
+    height: 54px; display: grid; grid-template-columns: minmax(0,1fr) auto auto auto;
+    align-items: center; gap: 6px; padding: 0 10px;
+  }
+  .brand { min-width: 0; }
+  .brand h1 { margin: 0; font-size: 21px; line-height: 1.1; letter-spacing: -0.02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #9a2130; }
+  .brand p { margin: 3px 0 0; color: #a98c8c; font-size: 12px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .metric { min-width: 46px; height: 42px; padding: 3px 5px; border-radius: 12px; background: #ffffff; box-shadow: 0 1px 3px rgba(58,33,35,.08); display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .metric span { color: #b08f8f; font-size: 11px; font-weight: 700; letter-spacing: .05em; line-height: 1; }
+  .metric strong { font-size: 16px; font-variant-numeric: tabular-nums; line-height: 1.2; }
+  .metric-score strong { color: #b8860b; }
+
+  .icon-button { width: 42px; height: 42px; border-radius: 12px; background: #ffffff; box-shadow: 0 1px 3px rgba(58,33,35,.08); display: grid; place-items: center; cursor: pointer; }
+  .icon-button:active { transform: translateY(1px) scale(.98); }
+  .restart-button { min-width: 46px; height: 42px; border-radius: 12px; background: #ffffff; box-shadow: 0 1px 3px rgba(58,33,35,.08); font-size: 12px; font-weight: 800; color: #9a2130; cursor: pointer; padding: 0 8px; }
+  .restart-button:active { transform: translateY(1px) scale(.98); }
+
+  .board {
+    position: relative; width: 100%; aspect-ratio: 2 / 3; overflow: hidden; isolation: isolate;
+    background: url("assets/scut-campus.jpg") center / cover no-repeat #f3e7e4;
+    box-shadow: 0 0 0 1px rgba(58,33,35,.06) inset;
+  }
+  #gameCanvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; cursor: crosshair; }
+
+  .overlay { position: absolute; inset: 0; z-index: 5; padding: 22px; background: rgba(252,246,244,.94); display: grid; place-items: center; }
+  .overlay-card { width: 100%; max-width: 320px; padding: 24px 22px; border: 1px solid #e6cfc9; border-radius: 22px; background: #ffffff; box-shadow: 0 12px 30px rgba(58,33,35,.14); text-align: center; }
+  .overlay h2 { margin: 0; font-size: 26px; line-height: 1.25; letter-spacing: -0.03em; color: #3a2123; }
+  .confirm-copy { margin: 10px 0 18px; color: #a98c8c; font-size: 15px; line-height: 1.45; }
+  .result-row { margin-bottom: 14px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .result-row > div { padding: 11px 8px; border-radius: 13px; background: #faf1ef; }
+  .result-row > div > span { display: block; margin-bottom: 4px; color: #b08f8f; font-size: 11px; font-weight: 700; }
+  .result-row > div > strong { display: block; color: #9a2130; font-size: 19px; }
+  .highest-item { width: 64px; height: 64px; margin: 2px auto 0; border-radius: 50%; display: grid; place-items: center; font-weight: 800; color: #fff; font-size: 15px; text-shadow: 0 1px 2px rgba(0,0,0,.2); overflow: hidden; }
+  .new-record { margin: -4px 0 13px; color: #c0392b; font-weight: 800; }
+  .confirm-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+  .game-over-actions { grid-template-columns: 1fr; }
+  .btn { height: 44px; border-radius: 13px; font-size: 14px; font-weight: 800; cursor: pointer; }
+  .btn:active { transform: translateY(1px) scale(.98); }
+  .btn-secondary { background: #f3e7e4; color: #6a4646; }
+  .btn-primary { background: #a5212f; color: #fff; }
+
+  .footer { padding: 8px 10px; color: #c0a5a5; font-size: 11px; text-align: center; line-height: 1.5; }
+
+  .sound-icon { position: relative; width: 20px; height: 18px; display: block; color: #6a4646; }
+  .sound-icon::before { position: absolute; top: 1px; left: 1px; width: 13px; height: 16px; background: currentColor; clip-path: polygon(0 36%,30% 36%,72% 5%,72% 95%,30% 64%,0 64%); content: ""; }
+  .sound-icon::after { position: absolute; top: 4px; right: 0; width: 6px; height: 10px; border-right: 2px solid currentColor; border-radius: 0 50% 50% 0; content: ""; }
+  .sound-icon.is-muted::after { top: 8px; right: 0; width: 19px; height: 2px; border: 0; border-radius: 999px; background: currentColor; transform: rotate(-45deg); }
+
+  /* 合成链图鉴 */
+  .codex-icon { color: #6a4646; font-size: 11px; font-weight: 800; letter-spacing: -0.03em; }
+  .codex-card { padding: 20px 16px; max-height: 100%; overflow-y: auto; }
+  .codex-card .confirm-copy { margin: 8px 0 14px; font-size: 12px; }
+  .codex-list { margin: 0 0 16px; padding: 0; list-style: none; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .codex-item { min-width: 0; padding: 5px 7px; border-radius: 12px; background: #faf1ef; display: flex; align-items: center; gap: 7px; text-align: left; }
+  .codex-item.is-top { background: #fdf5e2; box-shadow: 0 0 0 1px #e6b422 inset; }
+  .codex-count { color: #9a2130; }
+  .codex-face { flex: 0 0 auto; width: 34px; height: 34px; border-radius: 50%; background-color: #fff; background-size: cover; background-position: center 35%; background-repeat: no-repeat; display: grid; place-items: center; box-shadow: 0 0 0 1.5px #fff, 0 1px 3px rgba(58,33,35,.18); }
+  .codex-face.is-top { box-shadow: 0 0 0 2px #e6b422, 0 1px 3px rgba(58,33,35,.18); }
+  .codex-face.is-locked { background-color: #efe6e4; color: #bda3a3; font-size: 13px; font-weight: 800; box-shadow: 0 0 0 1.5px #fff, 0 1px 3px rgba(58,33,35,.08); }
+  .codex-face.is-ph { opacity: .45; }
+  .codex-item.is-locked { background: #f7f2f1; box-shadow: none; }
+  .codex-item.is-locked .codex-name { color: #b08f8f; }
+  .codex-item.is-locked .codex-full { color: #ccb8b8; }
+  .codex-text { min-width: 0; display: flex; flex-direction: column; }
+  .codex-name { color: #3a2123; font-size: 12.5px; line-height: 1.15; }
+  .codex-full { color: #a98c8c; font-size: 10px; line-height: 1.25; }
+
+  /* 难度选择 */
+  .difficulty { padding: 9px 10px 0; display: flex; align-items: center; flex-wrap: wrap; gap: 5px; }
+  .difficulty-label { color: #b08f8f; font-size: 11px; font-weight: 700; letter-spacing: .05em; }
+  .diff-btn { height: 30px; padding: 0 9px; border-radius: 999px; background: #ffffff; color: #6a4646; font-size: 11.5px; font-weight: 800; box-shadow: 0 1px 3px rgba(58,33,35,.08); cursor: pointer; }
+  .diff-btn.is-on { background: #a5212f; color: #ffffff; }
+  .diff-btn:active { transform: translateY(1px) scale(.98); }
+  .difficulty-hint { margin-left: auto; min-width: 0; color: #c0a5a5; font-size: 11px; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .coin-badge { flex: 0 0 auto; padding: 4px 8px; border-radius: 999px; background: #f4efee; color: #b08f8f; font-size: 11px; font-weight: 800; white-space: nowrap; }
+  .coin-badge.is-on { background: #fdf5e2; color: #8a6a12; box-shadow: 0 0 0 1px #ecd9a6 inset; }
+  @media (max-width: 400px) {
+    .difficulty-hint { flex: 1 1 100%; white-space: normal; }   /* 窄屏让提示独占一行，避免被截断 */
+    /* 窄屏压缩顶栏，保证标题不被省略号截断 */
+    .brand h1 { font-size: 18px; }
+    .brand p { font-size: 11px; }
+    .metric { min-width: 42px; height: 40px; }
+    .icon-button { width: 38px; height: 38px; }
+    .restart-button { min-width: 42px; height: 38px; padding: 0 7px; font-size: 11.5px; }
+  }
+  @media (max-width: 380px) {
+    .brand p { display: none; }                                  /* 超窄屏只留标题 */
+  }
+  @media (max-width: 340px) {
+    .brand h1 { font-size: 15px; }
+    .metric { min-width: 40px; }
+    .icon-button { width: 34px; height: 34px; }
+    .restart-button { min-width: 38px; }
+  }
+  .btn-revive { background: linear-gradient(180deg, #f9dd8d, #e6b422); color: #5a3b00; }
+  @media (max-width: 380px) {
+    .codex-card { padding: 14px 12px; }
+    .codex-card h2 { font-size: 21px; }
+    .codex-card .confirm-copy { margin: 6px 0 10px; font-size: 11px; }
+    .codex-list { gap: 5px; margin-bottom: 12px; }
+    .codex-item { padding: 4px 6px; gap: 5px; }
+    .codex-face { width: 28px; height: 28px; }
+    .codex-name { font-size: 11.5px; }
+    .codex-full { font-size: 9px; }
+  }
+</style>
+</head>
+<body>
+<main class="app">
+  <header class="topbar">
+    <div class="brand">
+      <h1>合成杨璐恺</h1>
+      <p>左右拖动 · 松手落下</p>
+    </div>
+    <div class="metric metric-score"><span>得分</span><strong id="score">0</strong></div>
+    <div class="metric"><span id="bestLabel">最高</span><strong id="bestScore">0</strong></div>
+    <div style="display:flex;gap:5px;align-items:center;">
+      <button class="icon-button" id="codexButton" type="button" aria-label="合成链图鉴"><span class="codex-icon">图鉴</span></button>
+      <button class="icon-button" id="soundButton" type="button" aria-label="关闭声音" aria-pressed="true"><span class="sound-icon" id="soundIcon"></span></button>
+      <button class="restart-button" id="restartButton" type="button">重开</button>
+    </div>
+  </header>
+
+  <div class="board">
+    <canvas id="gameCanvas"></canvas>
+
+    <div class="overlay" id="gameOverOverlay" role="dialog" aria-modal="true" hidden>
+      <div class="overlay-card">
+        <h2>本局结束</h2>
+        <p class="confirm-copy" id="gameOverMessage">差一点就更大了</p>
+        <div class="result-row">
+          <div><span>最高合成</span><div class="highest-item" id="highestItem">—</div></div>
+          <div><span>得分</span><strong id="finalScore">0</strong></div>
+        </div>
+        <p class="new-record" id="newRecord" hidden>新纪录！</p>
+        <div class="confirm-actions game-over-actions">
+          <button class="btn btn-revive" id="reviveButton" type="button" hidden>用复活币复活</button>
+          <button class="btn btn-primary" id="againButton" type="button">再合一次</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="overlay" id="restartConfirmOverlay" role="dialog" aria-modal="true" hidden>
+      <div class="overlay-card">
+        <h2 id="restartTitle">重新开始？</h2>
+        <p class="confirm-copy" id="restartCopy">当前进度将会丢失</p>
+        <div class="confirm-actions">
+          <button class="btn btn-secondary" id="restartCancelButton" type="button">取消</button>
+          <button class="btn btn-primary" id="restartConfirmButton" type="button">重新开始</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="overlay" id="codexOverlay" role="dialog" aria-modal="true" aria-label="合成链图鉴" hidden>
+      <div class="overlay-card codex-card">
+        <h2>合成链图鉴</h2>
+        <p class="confirm-copy"><span class="codex-count" id="codexCount">已收集 0/12</span> · 合成出来才会显示头像和名字，没合出来是“不详”</p>
+        <ol class="codex-list" id="codexList"></ol>
+        <div class="confirm-actions game-over-actions">
+          <button class="btn btn-primary" id="codexCloseButton" type="button">知道了</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="difficulty" role="group" aria-label="难度选择">
+    <span class="difficulty-label">难度</span>
+    <button class="diff-btn" id="diffEasyButton" type="button" aria-pressed="true">低难度</button>
+    <button class="diff-btn" id="diffHardButton" type="button" aria-pressed="false">高难度</button>
+    <button class="diff-btn" id="diffSuperButton" type="button" aria-pressed="false">超低难度</button>
+    <span class="coin-badge" id="coinBadge">复活币 0</span>
+    <span class="difficulty-hint" id="diffHint"></span>
+  </div>
+
+  <footer class="footer">合成杨璐恺 · 两个相同的头像碰撞会合成更大的头像</footer>
+</main>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ===== 等级链：从小到大，对应 picture/001.jpg → 012.jpg =====
+     数组下标 = 等级编号，第 N 级的图片是 assets/level_N.jpg。
+     名字/身份暂时是占位符：换真名只改这里的 name / full，图片文件不用动。
+     半径严格按 1.2 倍递增：最小 26（手机上看得清）、最大 193（1.2^11 ≈ 7.43）。 */
+  var LEVELS = [
+    { name: "占位1",  full: "待补充", color: "#0e7490", radius: 26,  asset: "assets/level_0.jpg" },
+    { name: "占位2",  full: "待补充", color: "#a16207", radius: 31,  asset: "assets/level_1.jpg" },
+    { name: "占位3",  full: "待补充", color: "#6b7280", radius: 37,  asset: "assets/level_2.jpg" },
+    { name: "占位4",  full: "待补充", color: "#0f766e", radius: 45,  asset: "assets/level_3.jpg" },
+    { name: "占位5",  full: "待补充", color: "#2563eb", radius: 54,  asset: "assets/level_4.jpg" },
+    { name: "占位6",  full: "待补充", color: "#16a34a", radius: 65,  asset: "assets/level_5.jpg" },
+    { name: "占位7",  full: "待补充", color: "#7c3aed", radius: 78,  asset: "assets/level_6.jpg" },
+    { name: "占位8",  full: "待补充", color: "#c2410c", radius: 93,  asset: "assets/level_7.jpg" },
+    { name: "占位9",  full: "待补充", color: "#db2777", radius: 112, asset: "assets/level_8.jpg" },
+    { name: "占位10", full: "待补充", color: "#1e40af", radius: 134, asset: "assets/level_9.jpg" },
+    { name: "占位11", full: "待补充", color: "#9a2130", radius: 161, asset: "assets/level_10.jpg" },
+    { name: "占位12", full: "待补充", color: "#b8860b", radius: 193, asset: "assets/level_11.jpg", crown: true }
+  ];
+
+  /* ===== 预加载头像图片（没有照片的等级走占位头像；加载失败时回退为文字） ===== */
+  var IMAGES = [];
+  LEVELS.forEach(function (L, i) {
+    if (!L.asset) { IMAGES[i] = null; return; }
+    var img = new Image();
+    img.src = L.asset;
+    IMAGES[i] = img;
+  });
+
+  /* ===== 物理 / 世界常量 ===== */
+  var WORLD_W = 640;
+  var WORLD_H = 960;
+  var FLOOR = WORLD_H;
+  var LEFT_WALL = 0;
+  var RIGHT_WALL = WORLD_W;
+  var DANGER_LINE = 128;
+  var GRAVITY = 2100;
+  var WALL_RESTITUTION = 0.18;
+  var CIRCLE_RESTITUTION = 0.08;
+  var FRICTION = 0.20;
+  var GROUND_FRICTION = 2.0;   // 地面摩擦（每秒），减缓落地后的水平滑动
+  var DANGER_DELAY = 0.9;
+  var GRACE = 0.75;
+  var MAX_LEVEL = LEVELS.length - 1;  // 最大级（第 12 级）
+  var DROP_COOLDOWN = 0.42;
+  var MAX_SUBSTEPS = 4;               // 单帧物理子步上限，防止卡顿帧“穿模”
+  var HARD_POOL = 5;                  // 高难度：只投放最小的 5 级
+  var EASY_BACKOFF = 5;               // 低难度：上限 = “自己合成过的最高级 - 5”
+  var MIN_EASY_POOL = HARD_POOL;      // 低难度起步至少和高难度一样宽
+  var SUPER_POOL = MAX_LEVEL;         // 超低难度：一直投放到第 10 级，共 11 种
+  var HARD_SCORE_MULT = 2;            // 高难度得分倍率（实测自然分差 0.48×，×2 后两种难度基本持平）
+  var COIN_START = 3000;              // 满 3000 分开始给复活币
+  var COIN_STEP = 1000;               // 之后每多 1000 分多 1 枚
+  var CELEBRATE_DUR = 2.3;            // 合成最大级的庆祝动画时长（秒）
+  var difficulty = "easy";            // easy | hard | super（超低难度；每次进游戏都从低难度开始）
+  var spawnLevelCount = HARD_POOL;    // 随机投放的等级个数，由难度算出
+
+  var canvas = document.getElementById("gameCanvas");
+  var ctx = canvas.getContext("2d");
+  var scoreEl = document.getElementById("score");
+  var bestEl = document.getElementById("bestScore");
+  var bestLabelEl = document.getElementById("bestLabel");
+  var finalScoreEl = document.getElementById("finalScore");
+  var highestItemEl = document.getElementById("highestItem");
+  var gameOverMessageEl = document.getElementById("gameOverMessage");
+  var newRecordEl = document.getElementById("newRecord");
+  var gameOverOverlay = document.getElementById("gameOverOverlay");
+  var restartConfirmOverlay = document.getElementById("restartConfirmOverlay");
+  var againButton = document.getElementById("againButton");
+  var restartButton = document.getElementById("restartButton");
+  var restartCancelButton = document.getElementById("restartCancelButton");
+  var restartConfirmButton = document.getElementById("restartConfirmButton");
+  var soundButton = document.getElementById("soundButton");
+  var soundIcon = document.getElementById("soundIcon");
+  var codexOverlay = document.getElementById("codexOverlay");
+  var codexList = document.getElementById("codexList");
+  var codexButton = document.getElementById("codexButton");
+  var codexCloseButton = document.getElementById("codexCloseButton");
+  var codexCountEl = document.getElementById("codexCount");
+  var diffEasyButton = document.getElementById("diffEasyButton");
+  var diffHardButton = document.getElementById("diffHardButton");
+  var diffSuperButton = document.getElementById("diffSuperButton");
+  var diffHintEl = document.getElementById("diffHint");
+  var restartTitleEl = document.getElementById("restartTitle");
+  var restartCopyEl = document.getElementById("restartCopy");
+  var coinBadgeEl = document.getElementById("coinBadge");
+  var reviveButton = document.getElementById("reviveButton");
+
+  var STORAGE_KEY = "merge-yanglukai:best:v2";   // 按难度分开记最高分（JSON）
+  var CODEX_KEY = "merge-yanglukai:codex:v1";    // 图鉴解锁进度
+  var SYNTH_KEY = "merge-yanglukai:synth:v1";    // 自己合成过的最高级
+  var DIFF_KEYS = ["easy", "hard", "super"];
+  var DIFF_SHORT = { easy: "低", hard: "高", super: "超" };
+  var bestScores = { easy: 0, hard: 0, super: 0 };   // 每个难度各自的最高分
+  var revealed = {};                             // 已“合出来”过的等级
+  var bestSynth = 0;                             // 历史（跨局）合成过的最高等级，只用于图鉴展示
+  var gameSynth = 0;                             // 本局合成过的最高等级 → 决定本局掉落范围（每局重置）
+
+  var items = [];
+  var particles = [];
+  var floaters = [];
+  var score = 0;
+  var bestScore = 0;
+  var bestBeforeGame = 0;
+  var currentLevel = 0;
+  var aimX = WORLD_W / 2;
+  var readyToDrop = true;
+  var dropCooldown = 0;
+  var hasDroppedItem = false;
+  var maxLevelReached = 0;
+  var hasMergedHighest = false;
+  var reviveCoins = 0;        // 本局可用的复活币
+  var coinsEarned = 0;        // 本局已发放的复活币（用于增量结算）
+  var celebration = null;     // 合成最大级的全屏庆祝动画状态
+  var dangerTimer = 0;
+  var mode = "playing";   // playing | ending | gameover | confirming | codex | celebrate
+  var modeBeforeConfirm = "playing";
+  var nextItemId = 1;
+  var activePointer = null;
+  var tiltX = 0;   // 陀螺仪水平重力分量（左右倾斜映射，-1.2~1.2）
+  var soundEnabled = true;
+  var audioCtx = null;
+  var lastTime = 0;
+  var rafId = null;
+  var dpr = 1;
+  var scaleX = 1;
+  var scaleY = 1;
+
+  /* ===== 工具 ===== */
+  function clamp(v, lo, hi) { return v < lo ? lo : (v > hi ? hi : v); }
+  // 随机投放等级；超低难度下高等级权重大（权重 = (等级+1)^2），所以大块头明显更常见
+  function randLevel() {
+    var n = spawnLevelCount, i, total = 0;
+    if (difficulty === "super") {
+      for (i = 0; i < n; i++) total += (i + 1) * (i + 1);
+      var r = Math.random() * total;
+      for (i = 0; i < n; i++) {
+        r -= (i + 1) * (i + 1);
+        if (r <= 0) return i;
+      }
+      return n - 1;
+    }
+    return Math.floor(Math.random() * n);
+  }
+  function levelScore(level) { return Math.pow(2, level); }
+  // 高难度得分倍率（低难度为 1）
+  function scoreMultiplier() { return difficulty === "hard" ? HARD_SCORE_MULT : 1; }
+  // 复活币：满 COIN_START 分给第 1 枚，之后每 COIN_STEP 分多 1 枚
+  function coinsForScore(s) {
+    if (s < COIN_START) return 0;
+    return 1 + Math.floor((s - COIN_START) / COIN_STEP);
+  }
+
+  /* ===== 最高分（按难度分开保存） ===== */
+  function loadBestScores() {
+    var out = { easy: 0, hard: 0, super: 0 };
+    try {
+      var raw = window.localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        var obj = JSON.parse(raw);
+        if (obj && typeof obj === "object") {
+          for (var i = 0; i < DIFF_KEYS.length; i++) {
+            var v = parseInt(obj[DIFF_KEYS[i]], 10);
+            if (Number.isFinite(v) && v >= 0) out[DIFF_KEYS[i]] = v;
+          }
+        }
+      }
+    } catch (e) {}
+    return out;
+  }
+  function saveBestScores() {
+    try { window.localStorage.setItem(STORAGE_KEY, JSON.stringify(bestScores)); } catch (e) {}
+  }
+
+  /* ===== 图鉴解锁进度（本地保存） ===== */
+  function loadRevealed() {
+    var set = {};
+    try {
+      var raw = window.localStorage.getItem(CODEX_KEY);
+      var arr = raw ? JSON.parse(raw) : [];
+      if (Object.prototype.toString.call(arr) === "[object Array]") {
+        for (var i = 0; i < arr.length; i++) {
+          var n = parseInt(arr[i], 10);
+          if (n >= 0 && n < LEVELS.length) set[n] = true;
+        }
+      }
+    } catch (e) { set = {}; }
+    return set;
+  }
+  function saveRevealed() {
+    try {
+      var arr = [];
+      for (var i = 0; i < LEVELS.length; i++) if (revealed[i]) arr.push(i);
+      window.localStorage.setItem(CODEX_KEY, JSON.stringify(arr));
+    } catch (e) {}
+  }
+  // 一个等级只要是“出现过”（投放下来或合成出来）就解锁图鉴
+  function revealLevel(level) {
+    if (!(level >= 0 && level < LEVELS.length) || revealed[level]) return;
+    revealed[level] = true;
+    saveRevealed();
+    refreshCodex();
+  }
+
+  /* ===== 合成过的最高级 =====
+     有两个：gameSynth（本局，决定本局掉落范围，每局重置）
+             bestSynth（历史，仅用于图鉴里展示“历史最高合成”） */
+  function loadBestSynth() {
+    try {
+      var v = parseInt(window.localStorage.getItem(SYNTH_KEY), 10);
+      return Number.isFinite(v) && v >= 0 && v < LEVELS.length ? v : 0;
+    } catch (e) { return 0; }
+  }
+  function saveBestSynth() {
+    try { window.localStorage.setItem(SYNTH_KEY, String(bestSynth)); } catch (e) {}
+  }
+  // 只有“合成出来”的等级才算数（投放下来的不算）
+  function noteSynthesized(level) {
+    if (level > bestSynth) { bestSynth = level; saveBestSynth(); }
+    if (!(level > gameSynth)) return;
+    var had = poolFor(difficulty);
+    gameSynth = level;
+    updateDifficultyUI();
+    refreshCodex();
+    if (poolFor(difficulty) > had) {
+      floaters.push({ x: WORLD_W / 2, y: DANGER_LINE + 80, text: "掉落范围扩大！", life: 1.5, maxLife: 1.5 });
+      playUnlockSound();
+    }
+  }
+
+  /* ===== 物体 ===== */
+  function makeItem(level, x, y, vx, vy) {
+    var r = LEVELS[level].radius;
+    return {
+      id: nextItemId++, level: level, radius: r, mass: r * r, invMass: 1 / (r * r),
+      x: x, y: y, vx: vx || 0, vy: vy || 0, age: 0, grace: GRACE, pop: level === MAX_LEVEL ? 0.25 : 0
+    };
+  }
+
+  /* ===== 游戏流程 ===== */
+  function startGame() {
+    items = []; particles = []; floaters = [];
+    score = 0; hasDroppedItem = false; maxLevelReached = 0; hasMergedHighest = false;
+    reviveCoins = 0; coinsEarned = 0; celebration = null;
+    nextItemId = 1; dangerTimer = 0; activePointer = null;
+    bestBeforeGame = bestScore;
+    gameSynth = 0;                       // 本局重新开始：掉落范围回到该难度的起始范围
+    updateDifficultyUI();
+    currentLevel = randLevel();
+    aimX = WORLD_W / 2; readyToDrop = true; dropCooldown = 0;
+    mode = "playing";
+    gameOverOverlay.hidden = true;
+    restartConfirmOverlay.hidden = true;
+    codexOverlay.hidden = true;
+    newRecordEl.hidden = true;
+    updateCoinUI();
+    updateScore();
+    requestFrame();
+  }
+
+  function dropCurrent() {
+    if (mode !== "playing" || !readyToDrop) return;
+    aimX = limitAimX(aimX);
+    items.push(makeItem(currentLevel, aimX, -LEVELS[currentLevel].radius - 6, 0, 160));
+    revealLevel(currentLevel);
+    hasDroppedItem = true;
+    maxLevelReached = Math.max(maxLevelReached, currentLevel);
+    readyToDrop = false;
+    dropCooldown = DROP_COOLDOWN;
+    playDropSound();
+  }
+
+  function limitAimX(v) {
+    var r = LEVELS[currentLevel].radius;
+    return clamp(v, LEFT_WALL + r + 2, RIGHT_WALL - r - 2);
+  }
+
+  function beginFailure() {
+    if (mode !== "playing") return;
+    mode = "ending";
+    playGameOverSound();
+    // 简短爆炸后显示结束面板
+    setTimeout(finishGame, 320);
+  }
+
+  function finishGame() {
+    if (mode !== "ending") return;
+    mode = "gameover";
+    var madeRecord = score > bestBeforeGame && score > 0;
+    finalScoreEl.textContent = String(score);
+    var top = LEVELS[maxLevelReached];
+    var topImg = IMAGES[maxLevelReached];
+    highestItemEl.textContent = top.name;
+    highestItemEl.setAttribute("aria-label", top.name + " " + top.full);
+    highestItemEl.style.background = top.color;
+    highestItemEl.style.backgroundImage = "none";
+    if (topImg && topImg.complete && topImg.naturalWidth > 0) {
+      // 有头像就显示头像（圆形裁剪，不拉伸）；没有则回退成名字 + 等级色
+      highestItemEl.textContent = "";
+      highestItemEl.style.backgroundImage = "url('" + top.asset + "')";
+      highestItemEl.style.backgroundSize = "cover";
+      highestItemEl.style.backgroundPosition = "center 35%";
+    }
+    highestItemEl.style.boxShadow = top.crown ? "0 0 0 3px #e6b422" : "none";
+    gameOverMessageEl.textContent = hasMergedHighest ? ("已合成" + LEVELS[MAX_LEVEL].name + "！") : "差一点就更大了";
+    newRecordEl.hidden = !madeRecord;
+    reviveButton.hidden = reviveCoins <= 0;
+    reviveButton.textContent = "用复活币复活（剩 " + reviveCoins + " 枚）";
+    gameOverOverlay.hidden = false;
+  }
+
+  function openConfirm(kind) {
+    confirmKind = kind || "restart";
+    modeBeforeConfirm = mode;
+    if (confirmKind === "super") {
+      restartTitleEl.textContent = "开启超低难度？";
+      restartCopyEl.textContent = "高等级头像会频繁出现（最高可直接掉到最大级前一级，两个一碰就是最大级），本局会重新开始";
+      restartConfirmButton.textContent = "开启超低难度";
+    } else if (confirmKind === "difficulty") {
+      restartTitleEl.textContent = "切换难度？";
+      restartCopyEl.textContent = "将按新难度重新开始，当前进度会丢失";
+      restartConfirmButton.textContent = "切换并重开";
+    } else {
+      restartTitleEl.textContent = "重新开始？";
+      restartCopyEl.textContent = "当前进度将会丢失";
+      restartConfirmButton.textContent = "重新开始";
+    }
+    mode = "confirming";
+    restartConfirmOverlay.hidden = false;
+  }
+  function closeConfirm(confirmed) {
+    restartConfirmOverlay.hidden = true;
+    if (confirmed) {
+      if (pendingDifficulty) { applyDifficulty(pendingDifficulty); pendingDifficulty = null; }
+      startGame();
+      return;
+    }
+    pendingDifficulty = null;
+    mode = modeBeforeConfirm;
+    requestFrame();
+  }
+
+  /* ===== 分数（最高分按难度分开记） ===== */
+  function addMergeScore(level, x, y) {
+    var pts = Math.round(levelScore(level) * scoreMultiplier());
+    score += pts;
+    if (score > bestScore) {
+      bestScore = score;
+      bestScores[difficulty] = score;
+      saveBestScores();
+    }
+    floaters.push({ x: x, y: y, text: "+" + pts, life: 0.7, maxLife: 0.7 });
+    updateScore();
+
+    // 复活币：分数达标就发（每档只发一次）
+    var earned = coinsForScore(score);
+    if (earned > coinsEarned) {
+      var gain = earned - coinsEarned;
+      reviveCoins += gain;
+      coinsEarned = earned;
+      updateCoinUI();
+      floaters.push({ x: x, y: y - 34, text: "+" + gain + " 复活币", life: 1.1, maxLife: 1.1 });
+      playCoinSound();
+    }
+  }
+  function updateScore() {
+    scoreEl.textContent = String(score);
+    bestEl.textContent = String(bestScore);
+    bestLabelEl.textContent = "最高·" + (DIFF_SHORT[difficulty] || "低");
+  }
+  // 切换难度时把“最高”换成该难度自己的纪录
+  function syncBestToDifficulty() {
+    bestScore = bestScores[difficulty] || 0;
+    updateScore();
+  }
+  function updateCoinUI() {
+    coinBadgeEl.textContent = "复活币 " + reviveCoins;
+    coinBadgeEl.classList.toggle("is-on", reviveCoins > 0);
+  }
+
+  /* ===== 粒子 ===== */
+  function addBurst(x, y, color) {
+    var n = 8 + Math.floor(Math.random() * 6);
+    for (var i = 0; i < n; i++) {
+      var a = Math.random() * Math.PI * 2;
+      var sp = 60 + Math.random() * 110;
+      particles.push({ x: x, y: y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 40, r: 2 + Math.random() * 3, color: color, life: 0.45, maxLife: 0.55 });
+    }
+    if (particles.length > 200) particles.splice(0, particles.length - 200);
+  }
+
+  /* ===== 物理 ===== */
+  function physicsStep(dt) {
+    var i, j, b;
+    for (i = 0; i < items.length; i++) {
+      b = items[i];
+      b.vy += GRAVITY * dt;
+      b.vx += GRAVITY * tiltX * dt;
+      b.x += b.vx * dt;
+      b.y += b.vy * dt;
+      b.age += dt;
+      b.pop = Math.max(0, b.pop - dt);
+      // 墙壁
+      if (b.x - b.radius < LEFT_WALL) { b.x = LEFT_WALL + b.radius; if (b.vx < 0) b.vx = -b.vx * WALL_RESTITUTION; }
+      if (b.x + b.radius > RIGHT_WALL) { b.x = RIGHT_WALL - b.radius; if (b.vx > 0) b.vx = -b.vx * WALL_RESTITUTION; }
+      if (b.y + b.radius > FLOOR) { b.y = FLOOR - b.radius; if (b.vy > 0) b.vy = -b.vy * WALL_RESTITUTION; b.vx *= Math.max(0, 1 - GROUND_FRICTION * dt); }
+      // 微阻尼
+      b.vx *= 0.999;
+    }
+
+    var merges = [];
+    var mergeSet = {};
+    for (var iter = 0; iter < 3; iter++) {
+      for (i = 0; i < items.length; i++) {
+        var a = items[i];
+        for (j = i + 1; j < items.length; j++) {
+          b = items[j];
+          var dx = b.x - a.x, dy = b.y - a.y;
+          var minDist = a.radius + b.radius;
+          var distSq = dx * dx + dy * dy;
+          // 合成判定先于物理：同等级且足够接近（含一点容差）→ 立即合成，
+          // 不做弹开物理，避免两个球被推开后永远合不上。
+          if (a.level === b.level && a.level < MAX_LEVEL) {
+            var mergeTolerance = 0.6;
+            var mergeDist = minDist + mergeTolerance;
+            if (distSq < mergeDist * mergeDist) {
+              var key = Math.min(a.id, b.id) + ":" + Math.max(a.id, b.id);
+              if (!mergeSet[key]) { mergeSet[key] = true; merges.push([a, b]); }
+            }
+            continue;
+          }
+          // 不同等级走物理碰撞：只有真正重叠(穿透)才处理
+          if (distSq >= minDist * minDist) continue;
+          var dist = Math.sqrt(distSq);
+          if (dist < 0.0001) { dx = (a.id < b.id ? 1 : -1); dy = 0; dist = 0.0001; }
+          var nx = dx / dist, ny = dy / dist;
+          var overlap = minDist - dist;
+          // 位置修正（按质量分配）
+          var invSum = a.invMass + b.invMass;
+          var corr = overlap / invSum;
+          a.x -= nx * corr * a.invMass;
+          a.y -= ny * corr * a.invMass;
+          b.x += nx * corr * b.invMass;
+          b.y += ny * corr * b.invMass;
+          // 速度冲量
+          var rvx = b.vx - a.vx, rvy = b.vy - a.vy;
+          var velN = rvx * nx + rvy * ny;
+          if (velN < 0) {
+            var jimp = -(1 + CIRCLE_RESTITUTION) * velN / invSum;
+            a.vx -= jimp * nx * a.invMass; a.vy -= jimp * ny * a.invMass;
+            b.vx += jimp * nx * b.invMass; b.vy += jimp * ny * b.invMass;
+          }
+          // 摩擦
+          var tx = rvx - velN * nx, ty = rvy - velN * ny;
+          var tl = Math.sqrt(tx * tx + ty * ty);
+          if (tl > 0.0001) {
+            tx /= tl; ty /= tl;
+            var jt = -(rvx * tx + rvy * ty) / invSum;
+            var lim = FRICTION * Math.abs(jimp);
+            jt = clamp(jt, -lim, lim);
+            a.vx -= tx * jt * a.invMass; a.vy -= ty * jt * a.invMass;
+            b.vx += tx * jt * b.invMass; b.vy += ty * jt * b.invMass;
+          }
+        }
+      }
+    }
+
+    // 应用合成
+    if (merges.length) {
+      var consumed = {};
+      var created = [];
+      var topItem = null;
+      for (i = 0; i < merges.length; i++) {
+        var p = merges[i];
+        var a0 = p[0], b0 = p[1];
+        if (consumed[a0.id] || consumed[b0.id]) continue;
+        consumed[a0.id] = true; consumed[b0.id] = true;
+        var tm = a0.mass + b0.mass;
+        var mx = (a0.x * a0.mass + b0.x * b0.mass) / tm;
+        var my = (a0.y * a0.mass + b0.y * b0.mass) / tm;
+        var mvx = (a0.vx * a0.mass + b0.vx * b0.mass) / tm;
+        var mvy = (a0.vy * a0.mass + b0.vy * b0.mass) / tm;
+        var nl = a0.level + 1;
+        addMergeScore(nl, mx, my);
+        addBurst(mx, my, LEVELS[a0.level].color);
+        playMergeSound(nl);
+        mx = clamp(mx, LEFT_WALL + LEVELS[nl].radius, RIGHT_WALL - LEVELS[nl].radius);
+        my = Math.min(my, FLOOR - LEVELS[nl].radius);
+        var nb = makeItem(nl, mx, my, mvx * 0.5, mvy * 0.5);
+        created.push(nb);
+        revealLevel(nl);
+        noteSynthesized(nl);
+        if (nl === MAX_LEVEL) { hasMergedHighest = true; topItem = nb; }
+        maxLevelReached = Math.max(maxLevelReached, nl);
+      }
+      if (Object.keys(consumed).length) {
+        items = items.filter(function (b) { return !consumed[b.id]; });
+        items = items.concat(created);
+      }
+      if (topItem) startCelebration(topItem);   // 合成最大级 → 全屏庆祝 + 清掉其他所有物体
+    }
+  }
+
+  function updateDanger(dt) {
+    var crossed = false;
+    for (var i = 0; i < items.length; i++) {
+      var b = items[i];
+      if (b.age < b.grace) continue;
+      if (b.y - b.radius < DANGER_LINE) { crossed = true; break; }
+    }
+    if (crossed) dangerTimer += dt; else dangerTimer = Math.max(0, dangerTimer - dt * 2.8);
+    if (dangerTimer >= DANGER_DELAY) { beginFailure(); }
+  }
+
+  function updateEffects(dt) {
+    var i;
+    for (i = particles.length - 1; i >= 0; i--) {
+      var p = particles[i];
+      p.life -= dt;
+      if (p.life <= 0) { particles.splice(i, 1); continue; }
+      p.vy += 300 * dt;
+      p.x += p.vx * dt; p.y += p.vy * dt;
+    }
+    for (i = floaters.length - 1; i >= 0; i--) {
+      var f = floaters[i];
+      f.life -= dt; f.y -= 36 * dt;
+      if (f.life <= 0) floaters.splice(i, 1);
+    }
+  }
+
+  function tick(dt) {
+    if (mode === "playing") {
+      if (dropCooldown > 0) {
+        dropCooldown -= dt;
+        if (dropCooldown <= 0) { currentLevel = randLevel(); aimX = limitAimX(aimX); readyToDrop = true; }
+      }
+      physicsStep(dt);
+      updateDanger(dt);
+      updateEffects(dt);
+    }
+  }
+
+  /* ===== 合成最大级：全屏庆祝 + 清掉其他所有物体 ===== */
+  function celebrationBurst(x, y) {
+    var colors = ["#ffd54a", "#ff9d7a", "#ffffff"];
+    for (var k = 0; k < 3; k++) {
+      for (var i = 0; i < 26; i++) {
+        var a = Math.random() * Math.PI * 2;
+        var sp = 120 + Math.random() * 430;
+        particles.push({
+          x: x, y: y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 90,
+          r: 2 + Math.random() * 4, color: colors[k],
+          life: 1.1 + Math.random() * 0.6, maxLife: 1.4
+        });
+      }
+    }
+  }
+
+  function startCelebration(b) {
+    var keepId = b.id;
+    items = items.filter(function (o) { return o.id === keepId; });   // 除最大级外全部清除
+    particles = [];
+    floaters = [];
+    celebration = { id: keepId, t: 0, x: b.x, y: b.y, r: b.radius };
+    dangerTimer = 0;
+    activePointer = null;
+    mode = "celebrate";
+    celebrationBurst(b.x, b.y);
+    playCelebrationSound();
+  }
+
+  function updateCelebration(dt) {
+    if (!celebration) return;
+    celebration.t += dt;
+    updateEffects(dt);
+    // 持续撒金粉（整屏飘落，营造闪耀感）
+    if (particles.length < 220) {
+      for (var i = 0; i < 3; i++) {
+        particles.push({
+          x: Math.random() * WORLD_W, y: Math.random() * WORLD_H * 0.9,
+          vx: (Math.random() - 0.5) * 60, vy: -40 - Math.random() * 90,
+          r: 1.5 + Math.random() * 3,
+          color: Math.random() < 0.55 ? "#ffd54a" : "#fff3c4",
+          life: 0.9 + Math.random() * 0.7, maxLife: 1.6
+        });
+      }
+    }
+    if (celebration.t >= CELEBRATE_DUR) {
+      celebration = null;
+      mode = "playing";
+      lastTime = 0;
+      readyToDrop = true;
+      dropCooldown = DROP_COOLDOWN;
+      requestFrame();
+    }
+  }
+
+  /* ===== 复活币 ===== */
+  function revive() {
+    if (mode !== "gameover" || reviveCoins <= 0) return;
+    reviveCoins--;
+    updateCoinUI();
+    // 把越过警戒线的物体清掉，让玩家接着玩（线下的保留）
+    items = items.filter(function (b) { return b.y - b.radius >= DANGER_LINE; });
+    dangerTimer = 0;
+    celebration = null;
+    mode = "playing";
+    gameOverOverlay.hidden = true;
+    readyToDrop = true;
+    dropCooldown = 0;
+    lastTime = 0;
+    playReviveSound();
+    requestFrame();
+  }
+
+  /* ===== 渲染 ===== */
+  function syncCanvas() {
+    var rect = canvas.getBoundingClientRect();
+    dpr = clamp(window.devicePixelRatio || 1, 1, 2.5);
+    var w = Math.max(1, rect.width), h = Math.max(1, rect.height);
+    canvas.width = Math.round(w * dpr);
+    canvas.height = Math.round(h * dpr);
+    scaleX = w / WORLD_W;
+    scaleY = h / WORLD_H;
+  }
+
+  // 源图不一定是正方形：取“人脸偏上”的正方形窗口，避免把竖图/横图拉伸压扁
+  function faceWindow(img) {
+    var iw = img.naturalWidth, ih = img.naturalHeight;
+    var side = Math.min(iw, ih);
+    var sx, sy;
+    if (ih >= iw * 1.10) {              // 竖图：脸在偏上位置
+      sy = 0.30 * ih - 0.42 * side;
+      sx = (iw - side) / 2;
+    } else {                            // 横图 / 方图：居中
+      sx = (iw - side) / 2;
+      sy = (ih - side) / 2;
+    }
+    return { sx: clamp(sx, 0, iw - side), sy: clamp(sy, 0, ih - side), side: side };
+  }
+
+  // “无照片”占位头像：淡色底 + 头肩剪影
+  function drawPlaceholderAvatar(r, color) {
+    ctx.save();
+    ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.clip();
+    ctx.fillStyle = color; ctx.globalAlpha = 0.14;
+    ctx.fillRect(-r, -r, r * 2, r * 2);
+    ctx.globalAlpha = 0.50;
+    ctx.beginPath(); ctx.arc(0, -r * 0.20, r * 0.30, 0, Math.PI * 2); ctx.fill();   // 头
+    ctx.beginPath(); ctx.arc(0, r * 1.02, r * 0.64, 0, Math.PI * 2); ctx.fill();    // 肩
+    ctx.restore();
+  }
+
+  function drawBadge(x, y, radius, level, alpha, pop) {
+    var L = LEVELS[level];
+    var popScale = pop > 0 ? 1 + pop * 1.4 : 1;
+    var r = radius * popScale;
+    var bodyR = r - 1.5;
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.translate(x, y);
+    // 白色外圈
+    ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2);
+    ctx.fillStyle = "#ffffff"; ctx.fill();
+    // 主体底色（统一白色）
+    ctx.beginPath(); ctx.arc(0, 0, bodyR, 0, Math.PI * 2);
+    ctx.fillStyle = "#ffffff"; ctx.fill();
+    // 头像：有照片就圆形裁剪绘制；没有照片的等级画“无照片”占位头像；有照片但加载失败则回退成名字
+    var img = IMAGES[level];
+    if (img && img.complete && img.naturalWidth > 0) {
+      var win = faceWindow(img);
+      ctx.save();
+      ctx.beginPath(); ctx.arc(0, 0, bodyR, 0, Math.PI * 2);
+      ctx.clip();
+      ctx.drawImage(img, win.sx, win.sy, win.side, win.side, -bodyR, -bodyR, bodyR * 2, bodyR * 2);
+      ctx.restore();
+    } else if (!L.asset) {
+      drawPlaceholderAvatar(bodyR, L.color);
+    } else {
+      ctx.fillStyle = L.color;
+      ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      var chars = L.name.length;
+      var fs = radius * (chars <= 2 ? 0.5 : chars <= 3 ? 0.42 : 0.34);
+      ctx.font = "700 " + fs + "px system-ui, 'PingFang SC', 'Microsoft YaHei', sans-serif";
+      ctx.shadowColor = "rgba(0,0,0,.18)"; ctx.shadowBlur = 2; ctx.shadowOffsetY = 1;
+      ctx.fillText(L.name, 0, 1);
+    }
+    if (L.crown) {
+      ctx.beginPath(); ctx.arc(0, 0, r - 4, 0, Math.PI * 2);
+      ctx.strokeStyle = "#e6b422"; ctx.lineWidth = 2.5; ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function drawDangerLine() {
+    var near = dangerTimer > 0 || (mode === "playing" && dangerNear());
+    ctx.save();
+    ctx.setLineDash([7, 8]);
+    ctx.lineWidth = 2.5;
+    ctx.strokeStyle = near ? "rgba(220,60,60,.85)" : "rgba(120,120,120,.4)";
+    ctx.beginPath(); ctx.moveTo(LEFT_WALL, DANGER_LINE); ctx.lineTo(RIGHT_WALL, DANGER_LINE); ctx.stroke();
+    ctx.restore();
+  }
+  function dangerNear() {
+    for (var i = 0; i < items.length; i++) {
+      var b = items[i];
+      if (b.age >= b.grace && b.y - b.radius < DANGER_LINE + 70) return true;
+    }
+    return false;
+  }
+
+  function drawAimGuide() {
+    if (mode !== "playing" || !readyToDrop) return;
+    var r = LEVELS[currentLevel].radius;
+    ctx.save();
+    ctx.globalAlpha = 0.35;
+    ctx.strokeStyle = "#ffffff";
+    ctx.lineWidth = 2;
+    ctx.setLineDash([4, 6]);
+    ctx.beginPath(); ctx.moveTo(aimX, 0); ctx.lineTo(aimX, r + 26); ctx.stroke();
+    ctx.restore();
+    ctx.save();
+    ctx.font = "700 20px system-ui, 'Microsoft YaHei', sans-serif";
+    ctx.textAlign = "center";
+    ctx.lineWidth = 3.5;
+    ctx.strokeStyle = "rgba(255,255,255,.92)";
+    ctx.strokeText(LEVELS[currentLevel].name, aimX, r*2 + 30);
+    ctx.fillStyle = "#141414";
+    ctx.fillText(LEVELS[currentLevel].name, aimX, r*2 + 30);
+    ctx.restore();
+    drawBadge(aimX, r + 8, r, currentLevel, 0.85, 0);
+  }
+
+  function render() {
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.setTransform(dpr * scaleX, 0, 0, dpr * scaleY, 0, 0);
+    ctx.save();
+
+    if (celebration) {          // 庆祝动画：整屏只画最大级 + 特效
+      drawCelebration();
+      ctx.restore();
+      return;
+    }
+
+    drawDangerLine();
+    drawAimGuide();
+    for (var i = 0; i < items.length; i++) {
+      var b = items[i];
+      drawBadge(b.x, b.y, b.radius, b.level, 1, b.pop);
+    }
+    drawEffects();
+    ctx.restore();
+  }
+
+  function drawEffects() {
+    var i, p, f;
+    // 粒子
+    for (i = 0; i < particles.length; i++) {
+      p = particles[i];
+      ctx.save();
+      ctx.globalAlpha = clamp(p.life / p.maxLife, 0, 1);
+      ctx.fillStyle = p.color;
+      ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+    }
+    // 浮字（加分 / 复活币）
+    for (i = 0; i < floaters.length; i++) {
+      f = floaters[i];
+      ctx.save();
+      ctx.globalAlpha = clamp(f.life / f.maxLife, 0, 1);
+      ctx.fillStyle = "#b8860b";
+      ctx.font = "800 20px system-ui, 'PingFang SC', 'Microsoft YaHei', sans-serif";
+      ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      ctx.fillText(f.text, f.x, f.y);
+      ctx.restore();
+    }
+  }
+
+  function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
+  function easeInCubic(t) { return t * t * t; }
+
+  // 合成最大级：头像放大铺满整屏 + 光芒/光晕/粒子/金圈/标题，最后缩回原位
+  function drawCelebration() {
+    var c = celebration;
+    var p = clamp(c.t / CELEBRATE_DUR, 0, 1);
+    var cx = WORLD_W / 2, cy = WORLD_H / 2;
+    var full = Math.sqrt(WORLD_W * WORLD_W + WORLD_H * WORLD_H) / 2 + 30;   // 铺满全屏
+    var zoomIn = easeOutCubic(clamp((p - 0.04) / 0.30, 0, 1));
+    var zoomOut = easeInCubic(clamp((p - 0.82) / 0.18, 0, 1));
+    var k = zoomIn * (1 - zoomOut);
+    var r = c.r + (full - c.r) * k;
+    var x = cx + (c.x - cx) * (1 - k);
+    var y = cy + (c.y - cy) * (1 - k);
+    var appear = clamp(p / 0.15, 0, 1);
+
+    // 背景压暗
+    ctx.save();
+    ctx.globalAlpha = 0.62 * appear;
+    ctx.fillStyle = "#1d120f";
+    ctx.fillRect(0, 0, WORLD_W, WORLD_H);
+    ctx.restore();
+
+    // 旋转光芒
+    ctx.save();
+    ctx.globalAlpha = 0.16 * appear;
+    ctx.fillStyle = "#ffd54a";
+    ctx.translate(cx, cy);
+    var rays = 16, spin = c.t * 0.5, i;
+    for (i = 0; i < rays; i++) {
+      var a0 = spin + i * Math.PI * 2 / rays;
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.arc(0, 0, full * 1.4, a0, a0 + Math.PI / rays);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.restore();
+
+    // 扩散光晕
+    ctx.save();
+    ctx.globalAlpha = 0.5 * k;
+    ctx.translate(cx, cy);
+    for (i = 0; i < 3; i++) {
+      var pulse = (c.t * 0.8 + i * 0.33) % 1;
+      ctx.beginPath();
+      ctx.arc(0, 0, r * (0.55 + pulse * 0.75), 0, Math.PI * 2);
+      ctx.strokeStyle = "rgba(255,213,74," + (0.55 * (1 - pulse)).toFixed(3) + ")";
+      ctx.lineWidth = 6 * (1 - pulse) + 1;
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    // 头像本体
+    drawBadge(x, y, r, MAX_LEVEL, 1, 0);
+
+    // 粒子
+    drawEffects();
+
+    // 金圈
+    ctx.save();
+    ctx.globalAlpha = 0.9 * k;
+    ctx.beginPath(); ctx.arc(x, y, r - 3, 0, Math.PI * 2);
+    ctx.strokeStyle = "#ffd54a"; ctx.lineWidth = Math.max(3, r * 0.02); ctx.stroke();
+    ctx.restore();
+
+    // 标题
+    var tp = clamp((p - 0.24) / 0.16, 0, 1);
+    var fade = clamp((1 - p) / 0.14, 0, 1);
+    if (tp > 0 && fade > 0) {
+      ctx.save();
+      ctx.globalAlpha = tp * fade;
+      ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      var pop = 1 + 0.06 * Math.sin(c.t * 7);
+      ctx.translate(cx, 152);
+      ctx.scale(pop, pop);
+      ctx.font = "900 54px system-ui, 'PingFang SC', 'Microsoft YaHei', sans-serif";
+      ctx.lineWidth = 9; ctx.strokeStyle = "rgba(96,18,24,.9)";
+      var topName = LEVELS[MAX_LEVEL].name;
+      ctx.strokeText(topName, 0, 0);
+      ctx.fillStyle = "#ffd54a";
+      ctx.fillText(topName, 0, 0);
+      ctx.font = "800 24px system-ui, 'PingFang SC', 'Microsoft YaHei', sans-serif";
+      ctx.lineWidth = 6; ctx.strokeStyle = "rgba(96,18,24,.85)";
+      ctx.strokeText("全场清空 · 继续合！", 0, 50);
+      ctx.fillStyle = "#fff4d6";
+      ctx.fillText("全场清空 · 继续合！", 0, 50);
+      ctx.restore();
+    }
+
+    // 开场白闪
+    if (p < 0.14) {
+      ctx.save();
+      ctx.globalAlpha = (1 - p / 0.14) * 0.8;
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, WORLD_W, WORLD_H);
+      ctx.restore();
+    }
+  }
+
+  /* ===== 主循环 ===== */
+  function frame(now) {
+    rafId = null;
+    if (document.hidden) return;
+    var dt = lastTime === 0 ? 1 / 60 : Math.min((now - lastTime) / 1000, 0.05);
+    lastTime = now;
+    if (mode === "playing" || mode === "ending") {
+      // 按 ~120Hz 拆子步，最多 4 步：低帧率时也不会一步跨过碰撞/合成判定
+      var steps = Math.min(MAX_SUBSTEPS, Math.max(1, Math.ceil(dt / (1 / 120))));
+      var sub = dt / steps;
+      for (var s = 0; s < steps; s++) tick(sub);
+    } else if (mode === "celebrate") {
+      updateCelebration(dt);
+    }
+    render();
+    if (mode === "playing" || mode === "ending" || mode === "celebrate") requestFrame();
+  }
+  function requestFrame() {
+    if (rafId === null && !document.hidden) rafId = requestAnimationFrame(frame);
+  }
+
+  /* ===== 指针输入 ===== */
+  function eventWorldX(e) {
+    var rect = canvas.getBoundingClientRect();
+    return (e.clientX - rect.left) / scaleX;
+  }
+  canvas.addEventListener("pointerdown", function (e) {
+    if (mode !== "playing" || !readyToDrop || activePointer !== null) return;
+    activePointer = e.pointerId;
+    aimX = limitAimX(eventWorldX(e));
+    try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
+    ensureAudio();
+    if (e.cancelable) e.preventDefault();
+  });
+  canvas.addEventListener("pointermove", function (e) {
+    if (e.pointerId === activePointer || (activePointer === null && e.pointerType === "mouse")) {
+      if (mode === "playing" && readyToDrop) aimX = limitAimX(eventWorldX(e));
+      if (e.cancelable) e.preventDefault();
+    }
+  });
+  function finishGesture(e, shouldDrop) {
+    if (e.pointerId !== activePointer) return;
+    activePointer = null;
+    try { if (canvas.hasPointerCapture(e.pointerId)) canvas.releasePointerCapture(e.pointerId); } catch (err) {}
+    if (shouldDrop) dropCurrent();
+    if (e.cancelable) e.preventDefault();
+  }
+  canvas.addEventListener("pointerup", function (e) { finishGesture(e, true); });
+  canvas.addEventListener("pointercancel", function (e) { finishGesture(e, false); });
+
+  /* ===== 声音（可选，静默降级） ===== */
+  function ensureAudio() {
+    if (!soundEnabled) return;
+    try {
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if (!audioCtx && AC) audioCtx = new AC();
+      if (audioCtx && audioCtx.state === "suspended") audioCtx.resume();
+    } catch (e) { audioCtx = null; }
+  }
+  function tone(freq, dur, vol, type, delay) {
+    if (!soundEnabled || !audioCtx) return;
+    try {
+      var t0 = audioCtx.currentTime + (delay || 0);
+      var o = audioCtx.createOscillator(), g = audioCtx.createGain();
+      o.type = type || "sine"; o.frequency.setValueAtTime(freq, t0);
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(vol, t0 + 0.012);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+      o.connect(g); g.connect(audioCtx.destination);
+      o.start(t0); o.stop(t0 + dur + 0.02);
+    } catch (e) {}
+  }
+  function playDropSound() { tone(200, 0.07, 0.03, "sine", 0); }
+  function playMergeSound(level) { var f = 300 * Math.pow(1.12, Math.min(level, 8)); tone(f, 0.12, 0.05, "sine", 0); tone(f * 1.5, 0.09, 0.03, "triangle", 0.05); }
+  function playGameOverSound() { tone(240, 0.2, 0.04, "sine", 0); tone(180, 0.26, 0.035, "sine", 0.15); }
+  function playCoinSound() { tone(880, 0.09, 0.05, "triangle", 0); tone(1320, 0.13, 0.04, "triangle", 0.08); }
+  function playReviveSound() { tone(440, 0.12, 0.05, "sine", 0); tone(660, 0.14, 0.045, "sine", 0.1); tone(880, 0.22, 0.045, "sine", 0.2); }
+  function playUnlockSound() { tone(660, 0.1, 0.05, "triangle", 0); tone(990, 0.16, 0.045, "triangle", 0.09); }
+  function playCelebrationSound() {
+    var notes = [523, 659, 784, 1047, 1319];
+    for (var i = 0; i < notes.length; i++) tone(notes[i], 0.18, 0.05, "triangle", i * 0.09);
+    tone(1568, 0.5, 0.035, "sine", 0.48);
+    tone(784, 0.62, 0.03, "sine", 0.5);
+  }
+  function updateSoundIcon() {
+    soundIcon.classList.toggle("is-muted", !soundEnabled);
+    soundButton.setAttribute("aria-label", soundEnabled ? "关闭声音" : "开启声音");
+    soundButton.setAttribute("aria-pressed", String(soundEnabled));
+  }
+
+  /* ===== 难度：只影响“随机投放”能拿到哪些等级 ===== */
+  var pendingDifficulty = null;
+  var confirmKind = "restart";        // restart | difficulty | super
+
+  function poolFor(d) {
+    var cap;
+    if (d === "hard") return Math.min(LEVELS.length, HARD_POOL);     // 固定只投放最小的 5 级（占位1~占位5）
+    if (d === "super") return Math.min(LEVELS.length, SUPER_POOL);   // 固定投放到第 10 级（占位1~占位11，11 种）
+    cap = Math.min(LEVELS.length, MAX_LEVEL - EASY_BACKOFF + 1);     // 低难度天花板：占位1~占位7（7 种）
+    // 低难度：上限 =「本局合成过的最高级 - 5」，本局内随进度放宽（每局从起始范围重新开始）
+    return clamp(gameSynth - EASY_BACKOFF + 1, Math.min(MIN_EASY_POOL, cap), cap);
+  }
+
+  function updateDifficultyUI() {
+    spawnLevelCount = poolFor(difficulty);
+    var isEasy = difficulty === "easy", isHard = difficulty === "hard", isSuper = difficulty === "super";
+    diffEasyButton.classList.toggle("is-on", isEasy);
+    diffHardButton.classList.toggle("is-on", isHard);
+    diffSuperButton.classList.toggle("is-on", isSuper);
+    diffEasyButton.setAttribute("aria-pressed", String(isEasy));
+    diffHardButton.setAttribute("aria-pressed", String(isHard));
+    diffSuperButton.setAttribute("aria-pressed", String(isSuper));
+    diffHintEl.textContent = "掉落 " + LEVELS[0].name + " ~ " + LEVELS[spawnLevelCount - 1].name +
+      (isHard ? " · 得分×" + HARD_SCORE_MULT : "") +
+      (isSuper ? " · 高等级更常见" : "");
+    if (currentLevel >= spawnLevelCount) currentLevel = randLevel();
+  }
+  function applyDifficulty(d) {
+    difficulty = d === "hard" ? "hard" : (d === "super" ? "super" : "easy");
+    updateDifficultyUI();
+    syncBestToDifficulty();   // “最高”跟着难度切换成对应纪录
+  }
+  function chooseDifficulty(d) {
+    if (overlaysBusy() || d === difficulty) return;
+    if (d === "super") {                 // 超低难度：每次选择都要先确认
+      pendingDifficulty = d;
+      openConfirm("super");
+      return;
+    }
+    if (mode === "playing" && hasDroppedItem) {   // 局中已有进度 → 先确认再重开
+      pendingDifficulty = d;
+      openConfirm("difficulty");
+      return;
+    }
+    applyDifficulty(d);
+    startGame();
+  }
+
+  /* ===== 合成链图鉴（未解锁显示“不详”） ===== */
+  var modeBeforeCodex = "playing";
+  var codexItems = [];
+
+  function buildCodex() {
+    var frag = document.createDocumentFragment();
+    for (var i = 0; i < LEVELS.length; i++) {
+      var li = document.createElement("li");
+      var face = document.createElement("span");
+      var text = document.createElement("span");
+      text.className = "codex-text";
+      var nm = document.createElement("strong");
+      nm.className = "codex-name";
+      var fl = document.createElement("span");
+      fl.className = "codex-full";
+      text.appendChild(nm); text.appendChild(fl);
+      li.appendChild(face); li.appendChild(text);
+      codexItems.push({ li: li, face: face, name: nm, full: fl });
+      frag.appendChild(li);
+    }
+    codexList.appendChild(frag);
+    refreshCodex();
+  }
+
+  function renderCodexItem(i) {
+    var L = LEVELS[i], it = codexItems[i];
+    if (!it) return;
+    var on = !!revealed[i];
+    var crown = on && !!L.crown;
+    var ph = on && !L.asset;                 // 已解锁但没有照片 → 占位头像
+    it.li.className = "codex-item" + (crown ? " is-top" : "") + (on ? "" : " is-locked");
+    it.face.className = "codex-face" + (crown ? " is-top" : "") + (on ? "" : " is-locked") + (ph ? " is-ph" : "");
+    it.face.style.backgroundImage = (on && L.asset) ? "url('" + L.asset + "')" : "none";
+    it.face.style.backgroundColor = ph ? L.color : "";
+    it.face.textContent = on ? "" : "?";
+    it.name.textContent = on ? L.name : "不详";
+    it.full.textContent = on ? L.full : "尚未合成";
+    it.li.setAttribute("aria-label", on ? (L.name + " " + L.full) : ("第 " + (i + 1) + " 级 尚未合成"));
+  }
+
+  function refreshCodex() {
+    var got = 0;
+    for (var i = 0; i < LEVELS.length; i++) {
+      if (revealed[i]) got++;
+      renderCodexItem(i);
+    }
+    if (codexCountEl) {
+      codexCountEl.textContent = "已收集 " + got + "/" + LEVELS.length +
+        " · 历史最高合成 " + (bestSynth > 0 ? LEVELS[bestSynth].name : "—");
+    }
+  }
+
+  function overlaysBusy() { return !codexOverlay.hidden || !restartConfirmOverlay.hidden; }
+
+  function openCodex() {
+    if (overlaysBusy()) return;
+    refreshCodex();
+    modeBeforeCodex = mode;
+    if (mode === "playing") mode = "codex";   // 游戏中打开图鉴先暂停，避免一边看一边掉
+    codexOverlay.hidden = false;
+  }
+  function closeCodex() {
+    if (codexOverlay.hidden) return;
+    codexOverlay.hidden = true;
+    if (mode === "codex") { mode = modeBeforeCodex; lastTime = 0; requestFrame(); }
+  }
+
+  /* ===== 键盘（桌面端）：← → 瞄准，空格/↓ 落下，Esc 关闭弹窗 ===== */
+  window.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") {
+      if (!codexOverlay.hidden) { closeCodex(); return; }
+      if (!restartConfirmOverlay.hidden) { closeConfirm(false); return; }
+      return;
+    }
+    if (mode !== "playing" || !readyToDrop || overlaysBusy()) return;
+    if (e.key === "ArrowLeft") { aimX = limitAimX(aimX - 16); e.preventDefault(); }
+    else if (e.key === "ArrowRight") { aimX = limitAimX(aimX + 16); e.preventDefault(); }
+    else if (e.key === "ArrowDown" || e.key === " " || e.key === "Enter") { ensureAudio(); dropCurrent(); e.preventDefault(); }
+  });
+
+  /* ===== 事件绑定 ===== */
+  againButton.addEventListener("click", startGame);
+  reviveButton.addEventListener("click", revive);
+  restartButton.addEventListener("click", function () { if (mode === "playing") openConfirm("restart"); });
+  diffEasyButton.addEventListener("click", function () { chooseDifficulty("easy"); });
+  diffHardButton.addEventListener("click", function () { chooseDifficulty("hard"); });
+  diffSuperButton.addEventListener("click", function () { chooseDifficulty("super"); });
+  codexButton.addEventListener("click", openCodex);
+  codexCloseButton.addEventListener("click", closeCodex);
+  restartCancelButton.addEventListener("click", function () { closeConfirm(false); });
+  restartConfirmButton.addEventListener("click", function () { closeConfirm(true); });
+  soundButton.addEventListener("click", function () {
+    soundEnabled = !soundEnabled;
+    updateSoundIcon();
+    if (soundEnabled) { ensureAudio(); tone(440, 0.08, 0.035, "sine", 0); }
+  });
+
+  /* ===== 陀螺仪：手机倾斜映射为水平重力 ===== */
+  var gyroAsked = false;
+
+  function onDeviceOrientation(e) {
+    if (e.gamma == null) return;
+    var g = e.gamma;   // 左右倾斜角（度），-90 ~ 90
+    tiltX = clamp(g / 45, -1.2, 1.2);
+  }
+
+  function requestGyroPermission() {
+    if (gyroAsked) return;
+    gyroAsked = true;
+    try {
+      if (typeof DeviceOrientationEvent === "undefined") return;
+      if (typeof DeviceOrientationEvent.requestPermission !== "function") return; // Android/桌面/旧iOS 无需授权
+      var p = DeviceOrientationEvent.requestPermission();
+      if (p && typeof p.then === "function") { p.then(function () {}).catch(function () {}); }
+    } catch (e) {}
+  }
+
+  window.addEventListener("deviceorientation", onDeviceOrientation);
+  // iOS 必须在用户手势里请求权限；touchstart 是 iOS 上最可靠的触发时机
+  canvas.addEventListener("touchstart", requestGyroPermission, { passive: true });
+
+  window.addEventListener("resize", function () { syncCanvas(); render(); });
+  window.addEventListener("blur", function () { activePointer = null; });
+  document.addEventListener("visibilitychange", function () {
+    if (document.hidden) return;
+    lastTime = 0; syncCanvas(); render(); requestFrame();
+  });
+
+  /* ===== 启动 ===== */
+  bestScores = loadBestScores();
+  bestScore = bestScores.easy || 0;   // 默认低难度，显示低难度的最高分
+  bestEl.textContent = String(bestScore);
+  updateSoundIcon();
+  revealed = loadRevealed();
+  bestSynth = loadBestSynth();
+  difficulty = "easy";          // 每次进游戏都从低难度开始（超低难度要手动选并确认）
+  updateDifficultyUI();
+  buildCodex();
+  syncCanvas();
+  startGame();
+})();
+</script>
+</body>
+</html>
