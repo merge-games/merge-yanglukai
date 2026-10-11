@@ -182,7 +182,7 @@
     <div class="overlay" id="codexOverlay" role="dialog" aria-modal="true" aria-label="合成链图鉴" hidden>
       <div class="overlay-card codex-card">
         <h2>合成链图鉴</h2>
-        <p class="confirm-copy"><span class="codex-count" id="codexCount">已收集 0/12</span> · 合成出来才会显示头像和名字，没合出来是“不详”</p>
+        <p class="confirm-copy"><span class="codex-count" id="codexCount">已收集 0/12</span> · 合成出来才会显示头像，没合出来是“不详”</p>
         <ol class="codex-list" id="codexList"></ol>
         <div class="confirm-actions game-over-actions">
           <button class="btn btn-primary" id="codexCloseButton" type="button">知道了</button>
@@ -209,21 +209,21 @@
 
   /* ===== 等级链：从小到大，对应 picture/001.jpg → 012.jpg =====
      数组下标 = 等级编号，第 N 级的图片是 assets/level_N.jpg。
-     名字/身份暂时是占位符：换真名只改这里的 name / full，图片文件不用动。
+     不出现任何人名：等级只用编号（"第1级"~"第12级"）显示。
      半径严格按 1.2 倍递增：最小 26（手机上看得清）、最大 193（1.2^11 ≈ 7.43）。 */
   var LEVELS = [
-    { name: "占位1",  full: "待补充", color: "#0e7490", radius: 26,  asset: "assets/level_0.jpg" },
-    { name: "占位2",  full: "待补充", color: "#a16207", radius: 31,  asset: "assets/level_1.jpg" },
-    { name: "占位3",  full: "待补充", color: "#6b7280", radius: 37,  asset: "assets/level_2.jpg" },
-    { name: "占位4",  full: "待补充", color: "#0f766e", radius: 45,  asset: "assets/level_3.jpg" },
-    { name: "占位5",  full: "待补充", color: "#2563eb", radius: 54,  asset: "assets/level_4.jpg" },
-    { name: "占位6",  full: "待补充", color: "#16a34a", radius: 65,  asset: "assets/level_5.jpg" },
-    { name: "占位7",  full: "待补充", color: "#7c3aed", radius: 78,  asset: "assets/level_6.jpg" },
-    { name: "占位8",  full: "待补充", color: "#c2410c", radius: 93,  asset: "assets/level_7.jpg" },
-    { name: "占位9",  full: "待补充", color: "#db2777", radius: 112, asset: "assets/level_8.jpg" },
-    { name: "占位10", full: "待补充", color: "#1e40af", radius: 134, asset: "assets/level_9.jpg" },
-    { name: "占位11", full: "待补充", color: "#9a2130", radius: 161, asset: "assets/level_10.jpg" },
-    { name: "占位12", full: "待补充", color: "#b8860b", radius: 193, asset: "assets/level_11.jpg", crown: true }
+    { name: "第1级",  full: "", color: "#0e7490", radius: 26,  asset: "assets/level_0.jpg" },
+    { name: "第2级",  full: "", color: "#a16207", radius: 31,  asset: "assets/level_1.jpg" },
+    { name: "第3级",  full: "", color: "#6b7280", radius: 37,  asset: "assets/level_2.jpg" },
+    { name: "第4级",  full: "", color: "#0f766e", radius: 45,  asset: "assets/level_3.jpg" },
+    { name: "第5级",  full: "", color: "#2563eb", radius: 54,  asset: "assets/level_4.jpg" },
+    { name: "第6级",  full: "", color: "#16a34a", radius: 65,  asset: "assets/level_5.jpg" },
+    { name: "第7级",  full: "", color: "#7c3aed", radius: 78,  asset: "assets/level_6.jpg" },
+    { name: "第8级",  full: "", color: "#c2410c", radius: 93,  asset: "assets/level_7.jpg" },
+    { name: "第9级",  full: "", color: "#db2777", radius: 112, asset: "assets/level_8.jpg" },
+    { name: "第10级", full: "", color: "#1e40af", radius: 134, asset: "assets/level_9.jpg" },
+    { name: "第11级", full: "", color: "#9a2130", radius: 161, asset: "assets/level_10.jpg" },
+    { name: "第12级", full: "", color: "#b8860b", radius: 193, asset: "assets/level_11.jpg", crown: true }
   ];
 
   /* ===== 预加载头像图片（没有照片的等级走占位头像；加载失败时回退为文字） ===== */
@@ -510,7 +510,7 @@
       highestItemEl.style.backgroundPosition = "center 35%";
     }
     highestItemEl.style.boxShadow = top.crown ? "0 0 0 3px #e6b422" : "none";
-    gameOverMessageEl.textContent = hasMergedHighest ? ("已合成" + LEVELS[MAX_LEVEL].name + "！") : "差一点就更大了";
+    gameOverMessageEl.textContent = hasMergedHighest ? "已合成最大级！" : "差一点就更大了";
     newRecordEl.hidden = !madeRecord;
     reviveButton.hidden = reviveCoins <= 0;
     reviveButton.textContent = "用复活币复活（剩 " + reviveCoins + " 枚）";
@@ -1064,7 +1064,7 @@
       ctx.scale(pop, pop);
       ctx.font = "900 54px system-ui, 'PingFang SC', 'Microsoft YaHei', sans-serif";
       ctx.lineWidth = 9; ctx.strokeStyle = "rgba(96,18,24,.9)";
-      var topName = LEVELS[MAX_LEVEL].name;
+      var topName = "合 成 最 大 级！";
       ctx.strokeText(topName, 0, 0);
       ctx.fillStyle = "#ffd54a";
       ctx.fillText(topName, 0, 0);
@@ -1182,9 +1182,9 @@
 
   function poolFor(d) {
     var cap;
-    if (d === "hard") return Math.min(LEVELS.length, HARD_POOL);     // 固定只投放最小的 5 级（占位1~占位5）
-    if (d === "super") return Math.min(LEVELS.length, SUPER_POOL);   // 固定投放到第 10 级（占位1~占位11，11 种）
-    cap = Math.min(LEVELS.length, MAX_LEVEL - EASY_BACKOFF + 1);     // 低难度天花板：占位1~占位7（7 种）
+    if (d === "hard") return Math.min(LEVELS.length, HARD_POOL);     // 固定只投放最小的 5 级（第1~5级）
+    if (d === "super") return Math.min(LEVELS.length, SUPER_POOL);   // 固定投放到第 10 级（第1~11级，共 11 种）
+    cap = Math.min(LEVELS.length, MAX_LEVEL - EASY_BACKOFF + 1);     // 低难度天花板：第1~7级（7 种）
     // 低难度：上限 =「本局合成过的最高级 - 5」，本局内随进度放宽（每局从起始范围重新开始）
     return clamp(gameSynth - EASY_BACKOFF + 1, Math.min(MIN_EASY_POOL, cap), cap);
   }
